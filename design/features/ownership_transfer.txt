@@ -134,3 +134,14 @@ Secondly, "optional" always requires additional run-time checks which can be avo
 To put it differently, "optional in" creates more work for the callee, "optional out" creates more work for the caller, and "optional in/out" creates more work for both caller and callee.
 
 Sometimes there is no way around using "optional". But where it can be easily avoided, it should be done.
+
+When To *Not* Use Ownership Transfer
+------------------------------------
+
+Sometimes the caller passes the address of an initialized pointer variable to the callee, and the callee may change the pointer (such as be reallocating a dynamically allocated memory block associated with it), yet the caller will eventually use the pointer to deallocate the memory block later.
+
+In such cases, there is no ownership transfer. The pointer variable, and with it the pointer value contained within, "belongs" to the caller the whole time.
+
+The callee is just entitled to use or modify the pointer variable, but it does not *own* the variable.
+
+"Ownership" in the context of ownership transfer attributes is always about the responsibility for eventually deallocating some resource, not just using or even modifying it.

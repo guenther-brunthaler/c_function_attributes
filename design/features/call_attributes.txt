@@ -1,8 +1,15 @@
 Function Call Attributes
 ========================
+
+"CFA" stands for "C Function Attributes" and is a set of conventions for naming C functions and their parameters, effectively annotating them. This attaches semantic meaning in the form of attributes to the names, for which the C language does not provide any means of declaring such attributes.
+
+The documentation of those semantic attributes can then be removed from the documentation of the individual functions or their parameters, and can be replaced by a single copy of the CFA conventions which applies to all documented functions at once.
+
+This document defines a particular kind of CFA, called "function call attributes".
+
 C++ supports declarators like throw() or "mutable" which C lacks.
 
-R4G uses a manual name-mangling scheme to encode such declarators into the function name, allowing the human reader of a source file to infer the associated semantics without a requirement to study the function's documentation for this purpose.
+CFA uses a manual name-mangling scheme to encode such declarators into the function name, allowing the human reader of a source file to infer the associated semantics without a requirement to study the function's documentation for this purpose.
 
 The mangling consist of adding a suffix "_c" (for "call attributes") to the end of the function name, being followed by a single digit encoding a combination of supported attributes.
 
@@ -25,22 +32,22 @@ But in addition to those particular error codes, other less specific errors may 
 
 Normally however, functions with such a suffix will be "fire & forget" functions: The caller just uses them and does not need to check for any errors.
 
-In outdated former versions of R4G bit # 0 had exactly the opposite meaning: To mark functions which would "never fail". Which means they would not throw exceptions or return error codes.
+In outdated former versions of CFA bit # 0 had exactly the opposite meaning: To mark functions which would "never fail". Which means they would not throw exceptions or return error codes.
 
 The problem with that approach was that it was unclear whether a function without this suffix would throw exceptions, return error codes - or not.
 
-The latter was the case for all non-R4G functions and required all R4G functions to have some prefix to be distinguished from "normal" (non-R4G) functions.
+The latter was the case for all non-CFA functions and required all CFA functions to have some prefix to be distinguished from "normal" (non-CFA) functions.
 
 Therefore bit # 0 now marks explicit exception support, and has the added bonus of allowing to easily create names of "wrapper" functions by just adding the suffix - without also requiring a specific prefix.
 
-For instance, instead of having r4g_strdup() being an exception-aware wrapper for strdup as part of the R4G core helper libraries, now strdup_c1() does the same without requiring a library-specific prefix.
+For instance, instead of having r4g_strdup() being an exception-aware wrapper for strdup as part of the CFA core helper libraries, now strdup_c1() does the same without requiring a library-specific prefix.
 
-This means the _c-Suffixes can be used by any function following R4G's concepts, whether they are part of the R4G framework itself or rather part of external / third party / application-specific custom code.
+This means the _c-Suffixes can be used by any function following CFA's concepts, whether they are part of the CFA framework itself or rather part of external / third party / application-specific custom code.
 
 
 "Mutably constant" Member Functions
 -----------------------------------
-R4G functions suffixed _c2 or _c3 promise not to change the "observable state" of the objects they operate on.
+CFA functions suffixed _c2 or _c3 promise not to change the "observable state" of the objects they operate on.
 
 That is, they will behave as if the object pointer was a const* in cases where it is not possible to actually use const pointers.
 
@@ -69,13 +76,13 @@ In any case, the first function argument must uniquely identify the object to be
 
 The special case of "_c0"
 -------------------------
-Specifying a call attribute suffix of "_c0" is unnecessary, as it expresses the default for normal C functions which do not follow R4G-specific semantics.
+Specifying a call attribute suffix of "_c0" is unnecessary, as it expresses the default for normal C functions which do not follow CFA-specific semantics.
 
-However, sometimes the "_c0"-suffix may still be useful to document that some function actually does follow R4G semantics, but will neither throw an error nor be a "mutably constant" member function.
+However, sometimes the "_c0"-suffix may still be useful to document that some function actually does follow CFA semantics, but will neither throw an error nor be a "mutably constant" member function.
 
-In particular, "_c0" suffixes will be used for all R4G core functions which do not actually require any call attribute, but this suffix still identifies them as a R4G function.
+In particular, "_c0" suffixes will be used for all CFA core functions which do not actually require any call attribute, but this suffix still identifies them as a CFA function.
 
-This makes prefixing all R4G library functions with something like "r4g_" unnecessary - the mere presence of a call attribute suffix already conveys the same information.
+This makes prefixing all CFA library functions with something like "r4g_" unnecessary - the mere presence of a call attribute suffix already conveys the same information.
 
 
 Functions registering resources

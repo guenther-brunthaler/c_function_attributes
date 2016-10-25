@@ -1,0 +1,94 @@
+Function Call Attributes
+========================
+C++ supports declarators like throw() or "mutable" which C lacks.
+
+R4G uses a manual name-mangling scheme to encode such declarators into the function name, allowing the human reader of a source file to infer the associated semantics without a requirement to study the function's documentation for this purpose.
+
+The mangling consist of adding a suffix "_c" (for "call attributes") to the end of the function name, being followed by a single digit encoding a combination of supported attributes.
+
+The digit calculates as follows (start with a value of 0):
+Bit 0 (add 1 to digit value) for functions which might throw exceptions.
+Bit 1 (add 2 to digit value) for "mutably constant" member functions.
+Bit 2 (add 4 to digit value) for functions registering resources.
+
+
+Functions which might throw exceptions
+--------------------------------------
+Functions with a suffix of _c1 or _c3 do not require any particular error checking by the caller.
+
+They are expected never to return directly to the caller in case of an error.
+Function names with such a suffix refer to functions which cannot fail at all.
+
+It is still possible for such a function to return particular error codes as part of their normal operation if this is documented.
+
+But in addition to those particular error codes, other less specific errors may also arise and will then make the function throw an exception.
+
+Normally however, functions with such a suffix will be "fire & forget" functions: The caller just uses them and does not need to check for any errors.
+
+In outdated former versions of R4G bit # 0 had exactly the opposite meaning: To mark functions which would "never fail". Which means they would not throw exceptions or return error codes.
+
+The problem with that approach was that it was unclear whether a function without this suffix would throw exceptions, return error codes - or not.
+
+The latter was the case for all non-R4G functions and required all R4G functions to have some prefix to be distinguished from "normal" (non-R4G) functions.
+
+Therefore bit # 0 now marks explicit exception support, and has the added bonus of allowing to easily create names of "wrapper" functions by just adding the suffix - without also requiring a specific prefix.
+
+For instance, instead of having r4g_strdup() being an exception-aware wrapper for strdup as part of the R4G core helper libraries, now strdup_c1() does the same without requiring a library-specific prefix.
+
+This means the _c-Suffixes can be used by any function following R4G's concepts, whether they are part of the R4G framework itself or rather part of external / third party / application-specific custom code.
+
+
+"Mutably constant" Member Functions
+-----------------------------------
+R4G functions suffixed _c2 or _c3 promise not to change the "observable state" of the objects they operate on.
+
+That is, they will behave as if the object pointer was a const* in cases where it is not possible to actually use const pointers.
+
+C++ supports the "mutable" declarator to mark "external" fields which are physically part of a structure, but do not logically belong to it.
+
+A typical application are "const" objects in an internally-linked list.
+
+The observable internal state of the objects will not change during the lifetime of the list, but new objects may be added to the list, resulting in changes of the internal linkage-pointer fields of the "constant" objects.
+
+Those linkage fields are hidden from the object's clients, so any changes in those fields have no effect on the client's perceived constantness of the object.
+
+However, it is not possible to define pointers to such objects as "const" anymore, because the object's internal state actually *does* change, even though it's just the linkage pointers.
+
+In such cases, the "mutably constant" call attribute comes handy.
+
+It specifies that the primary object on which the function operates will not be modified in any way observable by the client much like using a "const" pointer.
+
+However, some hidden internal fields of the object which do not effect its externally perceivable behavior might be modified, disallowing to actually use a "const" pointer.
+
+This call attribute also implies that the first function argument must be a non-"const" pointer to the object of which the function acts as an "observably constant" member function for.
+
+Alternatively, the first argument may be a "handle" to such an object, like an integer index into a global table of related objects or something similar.
+
+In any case, the first function argument must uniquely identify the object to be operated on somehow.
+
+
+The special case of "_c0"
+-------------------------
+Specifying a call attribute suffix of "_c0" is unnecessary, as it expresses the default for normal C functions which do not follow R4G-specific semantics.
+
+However, sometimes the "_c0"-suffix may still be useful to document that some function actually does follow R4G semantics, but will neither throw an error nor be a "mutably constant" member function.
+
+In particular, "_c0" suffixes will be used for all R4G core functions which do not actually require any call attribute, but this suffix still identifies them as a R4G function.
+
+This makes prefixing all R4G library functions with something like "r4g_" unnecessary - the mere presence of a call attribute suffix already conveys the same information.
+
+
+Functions registering resources
+-------------------------------
+
+This only applies to environments where a framework for collecting and later automatic freeing of resources using some sort of resource registry is available and in effect.
+
+In such environments, this call attribute documents that a function will also register the resources it has allocated with the beforementioned registry rather than just allocating them.
+
+This specification does not dictate a particular way how resource registries have to be implemented. Depending on the implementation, a resource registry reference may be passed as an argument to the function, or it may be a static, global or thread-local variable.
+
+Actually, this call attribute is rather a generalized an ownership-transfer attribute, because it transfers ownership of some resources to the resource registry.
+
+However, unlike real ownership-transfer attributes, this call atribute does not specify exactly the ownership of which resource will be transfered to the registry.
+
+This needs to be documented separately, unless the following default assumption applies: The registered resource is also returned as the primary return value, if it is a suitable resource reference. Otherwise, the first argument of the function must be an "out"-argument for obtaining such a resource reference.

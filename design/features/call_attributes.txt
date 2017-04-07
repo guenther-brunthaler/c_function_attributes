@@ -1,5 +1,7 @@
-Function Call Attributes
+﻿Function Call Attributes
 ========================
+Guenther Brunthaler <gb@emgenxx69lwyn5ctlr4nl64ul.local>
+Version 1.0, 2017-04-07
 
 "CFA" stands for "C Function Attributes" and is a set of conventions for naming C functions and their parameters, effectively annotating them. This attaches semantic meaning in the form of attributes to the names, for which the C language does not provide any means of declaring such attributes.
 
@@ -14,9 +16,10 @@ CFA uses a manual name-mangling scheme to encode such declarators into the funct
 The mangling consist of adding a suffix "_c" (for "call attributes") to the end of the function name, being followed by a single digit encoding a combination of supported attributes.
 
 The digit calculates as follows (start with a value of 0):
-Bit 0 (add 1 to digit value) for functions which might throw exceptions.
-Bit 1 (add 2 to digit value) for "mutably constant" member functions.
-Bit 2 (add 4 to digit value) for functions registering resources non-locally.
+
+* Bit 0 (add 1 to digit value) for functions which might throw exceptions.
+* Bit 1 (add 2 to digit value) for "mutably constant" member functions.
+* Bit 2 (add 4 to digit value) for functions registering resources non-locally.
 
 
 Functions which might throw exceptions

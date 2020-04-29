@@ -171,7 +171,7 @@ Sometimes there is no way around using "optional". But where it can be easily av
 When To *Not* Use Ownership Transfer
 ------------------------------------
 
-Sometimes the caller passes the address of an initialized pointer variable to the callee, and the callee may change the pointer (such as be reallocating a dynamically allocated memory block associated with it), yet the caller will eventually use the pointer to deallocate the memory block later.
+Sometimes the caller passes the address of an initialized pointer variable to the callee, and the callee may change the pointer (such as by reallocating a dynamically allocated memory block associated with it), yet the caller will eventually use the pointer to deallocate the memory block later.
 
 In such cases, there is no ownership transfer. The pointer variable, and with it the pointer value contained within, "belongs" to the caller the whole time.
 

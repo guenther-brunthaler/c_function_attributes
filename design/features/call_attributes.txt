@@ -1,7 +1,7 @@
 ﻿Function Call Attributes
 ========================
 Guenther Brunthaler <gb@emgenxx69lwyn5ctlr4nl64ul.local>
-Version 1.0, 2017-04-07
+Version 1.1, 2020-04-29
 
 "CFA" stands for "C Function Attributes" and is a set of conventions for naming C functions and their parameters, effectively annotating them. This attaches semantic meaning in the form of attributes to the names, for which the C language does not provide any means of declaring such attributes.
 
@@ -25,16 +25,33 @@ The digit calculates as follows (start with a value of 0):
 Functions which might throw exceptions
 --------------------------------------
 
-Functions with a suffix of _c1 or _c3 do not require any error checking by the caller.
+CFA-functions never require any error checking by the caller.
 
-They are expected never to return directly to the caller in case of an error.
-Function names with such a suffix refer to functions which "cannot fail at all" as far as the caller cares.
+This is actually the primary point for the existence of CFA.
+
+CFA functions are supposed to be "fire & forget"-functions: The caller just uses them and does not need to check for any errors.
+
+There are two possibilities how to achieve this: Either because a function cannot fail, or because it will not return to its caller in case of an error.
+
+CFA-functions with a suffix of _c1 or _c3 or _c5 or _c7 will do the latter.
+
+These suffixes mean that there is a chance that the function might actually fail, but it throw an exception and never return to its caller in this case.
+
+However, those suffixes also mean that the caller must ensure any resources allocated so far will be freed in the case that the called function will not return.
+
+This is normally done by registering the resources with some resource registration framework used by the application.
+
+Such a framework can be as primitive as storing a pointer to or a handle for the resource in a global variable.
+
+But the exception handling mechanism triggered by the function in case of an error must know about it and make sure that all resources will be released eventually before the application finally exits.
 
 It is still possible for such a function to return particular error codes as part of their normal operation if this is documented.
 
 But in addition to those particular error codes, other less specific errors may also arise and will then make the function throw an exception.
 
-Normally however, functions with such a suffix will be "fire & forget" functions: The caller just uses them and does not need to check for any errors.
+For instance, a function reading a line of text from a file might return 0 if EOF has been encountered or 1 if the line has successfully been read.
+
+Such a function will internally not just check for EOF but also for `ferror()`, and will only return to the caller if the latter check did not indicate an error.
 
 In outdated former versions of CFA bit # 0 had exactly the opposite meaning: To mark functions which would "never fail". Which means they would not throw exceptions or return error codes.
 
@@ -48,11 +65,15 @@ For instance, instead of having mylib_strdup() being an exception-aware wrapper 
 
 This means the _c-Suffixes can be used by any function following CFA's concepts, whether they are part of some framework using the CFA conventions itself or rather part of external / third party / application-specific custom code.
 
+Note that CFA does not define what "throwing an exception" actually means. This can be very different between programs. 'C++' programs might actually throw real 'C++'-exceptions. C-programs might call `longjmp()` or call `exit()` or `abort()` after error handling.
+
+CFA does not care. The only important thing is that no CFA-aware function must return to its caller when an exception is thrown (and not also handled) by it.
+
 
 "Mutably constant" Member Functions
 -----------------------------------
 
-CFA functions suffixed _c2 or _c3 promise not to change the "observable state" of the objects they operate on.
+CFA functions suffixed _c2 or _c3 or _c6 or _c7 promise not to change the "observable state" of the objects they operate on.
 
 That is, they will behave as if the object pointer was a const* in cases where it is not possible to actually use const pointers.
 
@@ -82,13 +103,11 @@ In any case, the first function argument must uniquely identify somehow the obje
 The special case of "_c0"
 -------------------------
 
-Specifying a call attribute suffix of "_c0" is unnecessary, as it expresses the default for normal C functions which do not follow CFA-specific semantics.
+Specifying a call attribute suffix of "_c0" means that this function follows CFA-specific semantics, but it neither registers any resources locally nor is it a "mutably constant" member function nor will it raise an error.
 
-However, sometimes the "_c0"-suffix may still be useful to document that some function actually does follow CFA semantics, but will neither throw an error nor be a "mutably constant" member function.
+Such a function must then be a "cannot fail"-function, which will always achieve its documented purpose and return a valid result (unless it is a `void` function).
 
-In particular, "_c0" suffixes will be used for all CFA core functions which do not actually require any call attribute, but this suffix still identifies them as a CFA-aware function.
-
-This makes prefixing all functions of a CFA-aware library with something like "mylib_" unnecessary - the mere presence of a call attribute suffix already conveys the same information.
+If a function may fail and return a special return code which the client should check, then this is not a CFA-function and should thus not have any "_c"-suffix at all.
 
 
 Functions registering resources non-locally
